@@ -1,5 +1,7 @@
 package com.izzette.mctc.itec2545.project1;
 
+import java.util.NoSuchElementException;
+
 import com.izzette.mctc.itec2545.project1.Card;
 import com.izzette.mctc.itec2545.project1.CardSuitE;
 import com.izzette.mctc.itec2545.project1.Deck;
@@ -17,17 +19,26 @@ class AgramGame {
 
 	private TrickCounter trickCounter = new TrickCounter ();
 
-	public AgramGame (PlayerPool playerPool, int startingPlayerId) {
+	public AgramGame (PlayerPool playerPool, int startingPlayerId) throws GameRuleException {
 		this.deck = new Deck ();
 		this.playerPool = playerPool;
 		this.leadingPlayerId = startingPlayerId;
 
 		removeCards ();
-		dealGame (startingPlayerId);
+		this.deck.shuffle ();
+
+		try {
+			dealGame (startingPlayerId);
+		} catch (GameRuleException e) {
+			System.out.println (
+					"Hmm, seems like there's more players " +
+					"than cards that need to be dealt.");
+			throw e;
+		}
 	}
 
 	public PlayerA play ()
-			throws PlayerA.CheatedException, DoublePlayException {
+			throws PlayerA.CheatedException, DoublePlayException, GameRuleException {
 		do playTrick (); while (6 > trickCounter.size ());
 
 		System.out.println ("Six tricks played!");
@@ -36,7 +47,7 @@ class AgramGame {
 	}
 
 	private void playTrick ()
-			throws PlayerA.CheatedException, DoublePlayException {
+			throws PlayerA.CheatedException, DoublePlayException, GameRuleException {
 		PlayerA leadingPlayer = playerPool.getPlayer (leadingPlayerId);
 
 		Card cardLead;
@@ -46,7 +57,7 @@ class AgramGame {
 			throw new DoublePlayException ();
 		}
 
-		System.out.printf ("%s lead with %s\n", leadingPlayer, cardLead);
+		System.out.printf ("%s lead with %s.\n", leadingPlayer, cardLead);
 
 		TrickInPlay trickInPlay = new TrickInPlay (
 				cardLead, leadingPlayerId, playerPool.size ());
@@ -66,17 +77,17 @@ class AgramGame {
 			try {
 				trickInPlay.playCard (card);
 			} catch (TrickCompletedException e) {
-				throw new RuntimeException (e);
+				throw new GameRuleException ();
 			}
 
-			System.out.printf ("%s followed with %s\n", nextPlayer, card);
+			System.out.printf ("%s followed with %s.\n", nextPlayer, card);
 		}
 
 		Trick trick;
 		try {
 			trick = trickInPlay.finishPlay ();
 		} catch (TrickInPlay.TrickNotCompletedException e) {
-			throw new PlayerA.CheatedException ();
+			throw new GameRuleException ();
 		}
 
 		CardSuitE cardSuit = cardLead.suit;
@@ -84,14 +95,17 @@ class AgramGame {
 		try {
 			leadingPlayerId = trickTakerDecider.decide ();
 		} catch (TrickTakerDecider.SuitLeadNotInTrickException e) {
-			throw new PlayerA.CheatedException ();
+			throw new GameRuleException ();
 		}
 
-		System.out.printf ("%s won the trick: %s\n",
+		System.out.printf ("%s won the trick: %s.\n",
 				playerPool.getPlayer (leadingPlayerId),
 				trick);
 
 		trickCounter.add (leadingPlayerId, trick);
+
+		// Give a little spacing ...
+		System.out.println ();
 	}
 
 	private void removeCards () {
@@ -113,12 +127,21 @@ class AgramGame {
 		});
 	}
 
-	private void dealGame (int dealerPlayerId) {
+	private void dealGame (int dealerPlayerId) throws GameRuleException {
 		PlayerA dealer = playerPool.getPlayer (dealerPlayerId);
-		dealer.deal (playerPool, deck);
+		try {
+			dealer.deal (playerPool, deck);
+		} catch (NoSuchElementException e) {
+			throw new GameRuleException ();
+		}
+		System.out.printf ("%s dealt 6 cards to each player.\n", dealer);
 	}
 
-	static public class DoublePlayException extends Exception {
+	static public class GameRuleException extends Exception {
+		static private final long serialVersionUID = 1;
+	}
+
+	static public class DoublePlayException extends GameRuleException {
 		static private final long serialVersionUID = 1;
 	}
 }

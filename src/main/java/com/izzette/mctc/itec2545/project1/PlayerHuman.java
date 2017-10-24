@@ -1,13 +1,12 @@
 package com.izzette.mctc.itec2545.project1;
 
-import input.InputUtils;
-
 import java.util.Arrays;
+import java.util.InputMismatchException;
 import java.util.LinkedList;
+import java.util.Scanner;
 
 class PlayerHuman extends PlayerA {
-	public PlayerHuman () {
-	}
+	private Scanner inputScanner = new Scanner (System.in);
 
 	@Override
 	public Card lead() throws PlayerA.CardNotInHandException {
@@ -31,7 +30,8 @@ class PlayerHuman extends PlayerA {
 
 	@Override
 	public void gloat () {
-		System.out.printf ("%s: \"%s\"\n", InputUtils.stringInput ("Gloat below:"));
+		System.out.print ("Gloat here: ");
+		System.out.printf ("%s: \"%s\"\n", this, inputScanner.nextLine ());
 	}
 
 	@Override
@@ -53,11 +53,22 @@ class PlayerHuman extends PlayerA {
 
 		int selection = -1;
 		for (;;) {
-			selection = InputUtils.intInput ("Pick a card, any card:");
-			if (selection < cards.length && selection >= 0)
-				break;
+			System.out.printf ("Pick a card, any card (%s%d): ",
+					(1 < cards.length ? "0-" : ""), cards.length - 1);
+			String selectionString = inputScanner.nextLine ();
+			try {
+				selection = Integer.parseInt (selectionString);
+			} catch (NumberFormatException e) {
+				System.out.println ("Hmm, let's try that again ...");
+				continue;
+			}
 
-			System.out.println ("Oops, you missed.  Are you feeling alright?");
+			if (selection >= cards.length || selection < 0) {
+				System.out.println ("Oops, you missed.  Are you feeling alright?");
+				continue;
+			}
+
+			break;
 		}
 
 		Card selectedCard = cards[selection];

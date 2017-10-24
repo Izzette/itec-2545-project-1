@@ -38,14 +38,33 @@ public class MainClass extends Object {
 
 		PlayerPool playerPool = new PlayerPool (players);
 
-		AgramGame game = new AgramGame (playerPool, 0);
+		System.out.printf ("You're playing Agram against %d computer%s, it's your deal.\n",
+				numberOfComputers, (1 < numberOfComputers ? "s" : ""));
+		System.out.println ("Let's play!");
+		System.out.println ();
+
+		AgramGame game;
+		try {
+			game = new AgramGame (playerPool, 0);
+		} catch (AgramGame.GameRuleException e) {
+			System.exit (1);
+			return;
+		}
 
 		PlayerA winner;
 		try {
 			winner = game.play ();
-		} catch (PlayerA.CheatedException | AgramGame.DoublePlayException e) {
-			System.out.println ("Somebody cheated!");
+		} catch (PlayerA.CheatedException e) {
+			System.out.println ("You cheated!");
+			System.out.println ("Cheaters always lose!");
+			System.exit (1);
+			return;
+		} catch (AgramGame.GameRuleException e) {
+			System.out.println ("Somebody doesn't know the rules ...");
+			System.out.println (e.toString ());
+			System.out.println (e.getMessage ());
 			e.printStackTrace ();
+			System.exit (1);
 			return;
 		}
 
